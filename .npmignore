@@ -1,0 +1,13 @@
+# Gradle build cache
+android/.gradle/
+
+# Compiled tests & mocks (consumers don't need these)
+lib/__tests__/
+lib/__mocks__/
+
+# Build artifacts
+*.tgz
+
+# IDE / OS
+.DS_Store
+*.metadata.json

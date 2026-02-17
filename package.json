@@ -1,5 +1,5 @@
 {
-  "name": "react-native-myid",
+  "name": "@maydon_tech/react-native-myid",
   "version": "1.0.0",
   "description": "React Native bridge for MyID biometric identification SDK (iOS & Android)",
   "main": "lib/index.js",
@@ -50,8 +50,13 @@
   },
   "files": [
     "src/",
+    "!src/__tests__/",
+    "!src/__mocks__/",
     "lib/",
+    "!lib/__tests__/",
+    "!lib/__mocks__/",
     "android/",
+    "!android/.gradle/",
     "ios/",
     "react-native-myid.podspec",
     "react-native.config.js",
@@ -59,6 +64,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/maydongroup/react-native-myid.git"
+  },
+  "homepage": "https://github.com/maydongroup/react-native-myid#readme",
+  "bugs": {
+    "url": "https://github.com/maydongroup/react-native-myid/issues"
   }
 }
