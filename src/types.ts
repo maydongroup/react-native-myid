@@ -1,0 +1,376 @@
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/**
+ * MyID SDK entry type.
+ * - `AUTH`: Full identification flow (liveness + face matching against passport).
+ * - `FACE`: Face detection only, returns a face image without verification.
+ */
+export enum MyIdEntryType {
+  AUTH = 'AUTH',
+  FACE = 'FACE',
+}
+
+/**
+ * MyID SDK build mode.
+ * - `PRODUCTION`: Production environment.
+ * - `DEBUG`: Sandbox environment for testing.
+ */
+export enum MyIdBuildMode {
+  PRODUCTION = 'PRODUCTION',
+  DEBUG = 'DEBUG',
+}
+
+/**
+ * MyID SDK locale for UI language.
+ */
+export enum MyIdLocale {
+  UZ = 'uz',
+  EN = 'en',
+  RU = 'ru',
+}
+
+/**
+ * Camera shape for the face capture screen.
+ */
+export enum MyIdCameraShape {
+  CIRCLE = 'CIRCLE',
+  ELLIPSE = 'ELLIPSE',
+}
+
+// ---------------------------------------------------------------------------
+// Organization details
+// ---------------------------------------------------------------------------
+
+/**
+ * Organization branding details shown in the SDK.
+ */
+export interface MyIdOrganizationDetails {
+  /** Support phone number displayed on error screens. Default: 712022202 */
+  phoneNumber?: string;
+  /** Logo resource name (platform-specific). Displayed on the input screen. */
+  logo?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Config — discriminated union (session flow vs hash flow)
+// ---------------------------------------------------------------------------
+
+/**
+ * Shared configuration fields for both SDK flows.
+ *
+ * @see {@link MyIdSessionConfig} — new session-based flow.
+ * @see {@link MyIdHashConfig}    — legacy client-hash flow.
+ */
+interface MyIdBaseConfig {
+  /** Client ID issued by MyID. Required for both flows. */
+  clientId: string;
+
+  /**
+   * Passport serial number (e.g., "AA1234567") or PINFL (14 digits).
+   * If provided, SDK skips the manual data entry screen.
+   */
+  passportData?: string;
+
+  /** Date of birth in format `dd.MM.yyyy`. */
+  birthDate?: string;
+
+  /**
+   * SDK hash from a previous successful identification.
+   * Can be used instead of passport data for returning users.
+   * Must be exactly 32 characters.
+   */
+  sdkHash?: string;
+
+  /**
+   * External ID for tracking (UUID4 format, 36 chars).
+   * Must be unique per request. Enables blurry photo recommendation screen.
+   */
+  externalId?: string;
+
+  /**
+   * Face comparison threshold (0.50 – 0.99).
+   * @default 0.50
+   */
+  threshold?: number;
+
+  /**
+   * Entry type: full identification (`AUTH`) or face detection only (`FACE`).
+   * @default MyIdEntryType.AUTH
+   */
+  entryType?: MyIdEntryType;
+
+  /**
+   * Build mode: production or sandbox.
+   * @default MyIdBuildMode.PRODUCTION
+   */
+  buildMode?: MyIdBuildMode;
+
+  /**
+   * UI language.
+   * @default MyIdLocale.UZ (Android) / MyIdLocale.RU (iOS)
+   */
+  locale?: MyIdLocale;
+
+  /**
+   * Camera overlay shape.
+   * @default MyIdCameraShape.CIRCLE
+   */
+  cameraShape?: MyIdCameraShape;
+
+  /**
+   * Whether to return the captured face image as base64.
+   * @default false
+   */
+  withPhoto?: boolean;
+
+  /** Organization branding details. */
+  organizationDetails?: MyIdOrganizationDetails;
+}
+
+/**
+ * Configuration for the **new session-based flow**.
+ *
+ * The `sessionId` is obtained from your backend by calling
+ * `POST /api/v2/sdk/sessions`.
+ *
+ * `clientHash` / `clientHashId` must **not** be provided.
+ */
+export interface MyIdSessionConfig extends MyIdBaseConfig {
+  /**
+   * Session ID from your backend (new flow).
+   * Created via `POST /api/v2/sdk/sessions`.
+   */
+  sessionId: string;
+
+  /** @deprecated Not allowed in session flow — use `sessionId` instead. */
+  clientHash?: never;
+  /** @deprecated Not allowed in session flow — use `sessionId` instead. */
+  clientHashId?: never;
+}
+
+/**
+ * Configuration for the **legacy client-hash flow**.
+ *
+ * `sessionId` must **not** be provided.
+ */
+export interface MyIdHashConfig extends MyIdBaseConfig {
+  /** @deprecated Not allowed in hash flow — use `clientHash` instead. */
+  sessionId?: never;
+
+  /** Client hash from your backend (old flow). */
+  clientHash: string;
+
+  /** Client hash ID / slug (old flow). */
+  clientHashId: string;
+}
+
+/**
+ * Configuration for starting the MyID SDK.
+ *
+ * This is a **discriminated union** — you must choose exactly one flow:
+ *
+ * - **Session flow** (recommended): provide `sessionId`.
+ * - **Hash flow** (legacy): provide `clientHash` + `clientHashId`.
+ *
+ * @example
+ * ```ts
+ * // ✅ Session flow
+ * const config: MyIdConfig = {
+ *   clientId: 'abc',
+ *   sessionId: 'uuid-from-backend',
+ * };
+ *
+ * // ✅ Hash flow
+ * const config: MyIdConfig = {
+ *   clientId: 'abc',
+ *   clientHash: 'hash',
+ *   clientHashId: 'slug',
+ * };
+ *
+ * // ❌ Compile error — cannot mix flows:
+ * const config: MyIdConfig = {
+ *   clientId: 'abc',
+ *   sessionId: 'uuid',
+ *   clientHash: 'hash', // Error!
+ * };
+ * ```
+ */
+export type MyIdConfig = MyIdSessionConfig | MyIdHashConfig;
+
+// ---------------------------------------------------------------------------
+// Result
+// ---------------------------------------------------------------------------
+
+/**
+ * Result returned on successful identification.
+ */
+export interface MyIdResult {
+  /**
+   * Authorization code to exchange for user data on your backend.
+   * - Old flow: exchange via `POST /api/v1/oauth2/access-token`
+   * - New flow: exchange via `GET /api/v1/sdk/data?code=`
+   *
+   * ⚠️ Valid for 5 minutes, single use only.
+   */
+  code: string;
+
+  /**
+   * Face comparison value (0.0 – 1.0).
+   * Higher = more confident match. Only available with `AUTH` entry type.
+   */
+  comparison?: number;
+
+  /**
+   * Captured face image as a base64-encoded string.
+   * Only returned if `withPhoto` was set to `true` in config.
+   */
+  image?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Error codes returned by the MyID SDK.
+ *
+ * Use with `MyIdError.code` to determine the failure reason.
+ *
+ * @example
+ * ```ts
+ * import { MyIdError, MyIdErrorCodes } from 'react-native-myid';
+ *
+ * try {
+ *   await startMyId(config);
+ * } catch (err) {
+ *   if (err instanceof MyIdError) {
+ *     if (err.code === MyIdErrorCodes.LIVENESS_FAILED) {
+ *       // handle liveness failure
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export const MyIdErrorCodes = {
+  /** User cancelled / exited the SDK. */
+  USER_EXITED: -1,
+  /** Passport data is incorrect. */
+  PASSPORT_DATA_INCORRECT: 2,
+  /** Liveness check failed. */
+  LIVENESS_FAILED: 3,
+  /** Face recognition failed. */
+  RECOGNITION_FAILED: 4,
+  /** External service unavailable. */
+  EXTERNAL_SERVICE_UNAVAILABLE: 5,
+  /** Person is marked as deceased. */
+  USER_DECEASED: 6,
+  /** Selfie photo was not received. */
+  PHOTO_NOT_RECEIVED: 7,
+  /** Internal server error. */
+  INTERNAL_ERROR: 8,
+  /** Identification task expired. */
+  TASK_EXPIRED: 9,
+  /** Processing queue timed out. */
+  QUEUE_TIMEOUT: 10,
+  /** Service temporarily unavailable. */
+  SERVICE_UNAVAILABLE: 11,
+  /** Liveness photo is of incorrect quality. */
+  LIVENESS_INCORRECT_PHOTO: 14,
+  /** Recognition photo is of incorrect quality. */
+  RECOGNITION_INCORRECT_PHOTO: 17,
+  /** Liveness service error. */
+  LIVENESS_SERVICE_ERROR: 18,
+  /** Recognition service error. */
+  RECOGNITION_SERVICE_ERROR: 19,
+  /** Photo is too blurry. */
+  BLURRY_PHOTO: 20,
+  /** Face is not fully visible in the photo. */
+  FACE_NOT_FULLY_SHOWN: 21,
+  /** Multiple faces detected. */
+  MULTIPLE_FACES: 22,
+  /** Image is grayscale. */
+  GRAYSCALE_IMAGE: 23,
+  /** Darkened glasses detected on face. */
+  DARKENED_GLASSES: 24,
+  /** Unsupported photo file type. */
+  UNSUPPORTED_PHOTO_TYPE: 25,
+  /** Eyes are closed. */
+  EYES_CLOSED: 26,
+  /** Head rotation too large. */
+  HEAD_ROTATION: 27,
+  /** Face landmarks not detected. */
+  LANDMARKS_NOT_DETECTED: 28,
+  /** Light artifact / glare detected. */
+  LIGHT_ARTIFACT: 29,
+  /** Face occlusion detected (mask, hand, etc.). */
+  OCCLUSION: 30,
+  /** Central face is not the biggest face in frame. */
+  CENTRAL_FACE_NOT_BIGGEST: 31,
+  /** Nose and mouth not detected. */
+  NOSE_MOUTH_NOT_DETECTED: 32,
+  /** No infrared image available. */
+  NO_INFRARED_IMAGE: 33,
+  /** Passport has expired. */
+  EXPIRED_PASSPORT: 34,
+  /** Generic SDK error. */
+  SDK_ERROR: 101,
+  /** Camera permission denied. */
+  CAMERA_DENIED: 102,
+  /** Server communication error. */
+  SERVER_ERROR: 103,
+  /** Blurry photo detected by SDK locally. */
+  SDK_BLURRY_DETECTED: 120,
+  /** User is banned from using the service. */
+  USER_BANNED: 122,
+} as const;
+
+/**
+ * Union of all possible numeric error codes from `MyIdErrorCodes`.
+ *
+ * Useful for exhaustive switch statements and type narrowing.
+ */
+export type MyIdErrorCode = (typeof MyIdErrorCodes)[keyof typeof MyIdErrorCodes];
+
+/**
+ * Error thrown when the MyID SDK encounters an issue or the user exits.
+ *
+ * Extends `Error` so it works with normal `try/catch`. Use `instanceof`
+ * to narrow the type and access `.code` / `.isUserExit`.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   const result = await startMyId(config);
+ * } catch (err) {
+ *   if (err instanceof MyIdError) {
+ *     if (err.isUserExit) {
+ *       // user tapped back / cancelled — handle gracefully
+ *       return;
+ *     }
+ *     console.error(`SDK error ${err.code}: ${err.message}`);
+ *   }
+ * }
+ * ```
+ */
+export class MyIdError extends Error {
+  /** Numeric error code. See {@link MyIdErrorCodes}. */
+  readonly code: number;
+
+  /** `true` when the user voluntarily exited the SDK (code === -1). */
+  readonly isUserExit: boolean;
+
+  constructor(code: number, message: string) {
+    super(message);
+    this.name = 'MyIdError';
+    this.code = code;
+    this.isUserExit = code === MyIdErrorCodes.USER_EXITED;
+
+    // Fix prototype chain for `instanceof` checks in transpiled code
+    Object.setPrototypeOf(this, MyIdError.prototype);
+  }
+}
+
+/** Sentinel error code string used by the native bridge for user exit. */
+export const MYID_USER_EXITED = 'MYID_USER_EXITED';

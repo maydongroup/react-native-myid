@@ -1,0 +1,96 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+// ---------------------------------------------------------------------------
+// New Architecture support
+// ---------------------------------------------------------------------------
+
+def isNewArchEnabled = rootProject.hasProperty("newArchEnabled") &&
+    rootProject.getProperty("newArchEnabled") == "true"
+
+if (isNewArchEnabled) {
+    apply plugin: "com.facebook.react"
+}
+
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+android {
+    namespace "com.reactnativemyid"
+    compileSdkVersion safeExtGet("compileSdkVersion", 34)
+
+    defaultConfig {
+        minSdkVersion safeExtGet("minSdkVersion", 21)
+        targetSdkVersion safeExtGet("targetSdkVersion", 34)
+
+        buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", "${isNewArchEnabled}"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["src/main/java"]
+            if (isNewArchEnabled) {
+                java.srcDirs += ["src/newarch"]
+            } else {
+                java.srcDirs += ["src/oldarch"]
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url "https://artifactory.aigroup.uz:443/artifactory/myid/" }
+}
+
+dependencies {
+    // React Native
+    implementation "com.facebook.react:react-android:+"
+
+    // MyID SDK (from Artifactory)
+    implementation "uz.myid.sdk.capture:myid-sdk:3.1.5"
+
+    // Required MyID SDK dependencies
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation "androidx.core:core-ktx:1.12.0"
+    implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
+
+    // CameraX
+    def cameraVersion = "1.3.1"
+    implementation "androidx.camera:camera-camera2:$cameraVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraVersion"
+    implementation "androidx.camera:camera-view:$cameraVersion"
+
+    // ML Kit (Google Play Services variants)
+    implementation "com.google.android.gms:play-services-mlkit-face-detection:17.1.0"
+    implementation "com.google.android.gms:play-services-mlkit-text-recognition:19.0.0"
+    implementation "com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0"
+}

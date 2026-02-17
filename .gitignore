@@ -1,0 +1,19 @@
+node_modules/
+lib/
+*.tsbuildinfo
+.DS_Store
+
+# Android
+android/build/
+android/.gradle/
+android/local.properties
+
+# iOS
+ios/build/
+ios/Pods/
+
+# IDE
+.idea/
+.vscode/
+*.xcworkspace
+*.xcuserdata

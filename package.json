@@ -1,0 +1,64 @@
+{
+  "name": "react-native-myid",
+  "version": "1.0.0",
+  "description": "React Native bridge for MyID biometric identification SDK (iOS & Android)",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "react-native": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "prepublishOnly": "tsc"
+  },
+  "keywords": [
+    "react-native",
+    "myid",
+    "biometric",
+    "identification",
+    "kyc",
+    "verification",
+    "uzbekistan"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.73.0"
+  },
+  "codegenConfig": {
+    "name": "RNMyIdModuleSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-native": "^0.72.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "jest": "^30.2.0",
+    "prettier": "^3.8.1",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "src/",
+    "lib/",
+    "android/",
+    "ios/",
+    "react-native-myid.podspec",
+    "react-native.config.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
