@@ -24,23 +24,13 @@ No additional setup needed — auto-linking and dependency resolution are handle
 
 ### iOS
 
-1. Download **MyIdSDK.xcframework** from the [MyID iOS SDK releases](https://gitlab.myid.uz/myid-public-code/myid-ios-sdk/-/releases) and place it in your project:
-
-   ```
-   ios/
-   └── Frameworks/
-       └── MyIdSDK.xcframework/
-   ```
-
-2. In Xcode, go to your app target → **General → Frameworks, Libraries, and Embedded Content** → add `MyIdSDK.xcframework` and set **Embed & Sign**.
-
-3. Install pods:
+1. Install pods (MyIdSDK is resolved automatically):
 
    ```bash
    cd ios && pod install
    ```
 
-4. Add to `Info.plist`:
+2. Add to `Info.plist`:
 
    ```xml
    <key>NSCameraUsageDescription</key>

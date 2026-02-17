@@ -15,14 +15,12 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   # ---------------------------------------------------------------------------
-  # MyIdSDK — consumers must place MyIdSDK.xcframework in their ios/Frameworks/
-  # See README for setup instructions.
-  # ---------------------------------------------------------------------------
-
-  # ---------------------------------------------------------------------------
   # New Architecture support
   # ---------------------------------------------------------------------------
   install_modules_dependencies(s)
+
+  # MyID SDK (available as a CocoaPod)
+  s.dependency "MyIdSDK"
 
   # ML Kit dependencies (required by MyID SDK)
   s.dependency "GoogleMLKit/FaceDetection", "~> 7.0"
@@ -33,8 +31,6 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     "DEFINES_MODULE" => "YES",
-    "SWIFT_COMPILATION_MODE" => "wholemodule",
-    "FRAMEWORK_SEARCH_PATHS" => '$(inherited) "${PODS_ROOT}/../../ios/Frameworks"',
-    "HEADER_SEARCH_PATHS" => '$(inherited) "${PODS_ROOT}/../../ios/Frameworks/MyIdSDK.xcframework/ios-arm64/MyIdSDK.framework/Headers"'
+    "SWIFT_COMPILATION_MODE" => "wholemodule"
   }
 end
