@@ -13,10 +13,11 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/example/react-native-myid.git", :tag => "v#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
-  s.exclude_files = "ios/MyIdSDK.xcframework/**/*"
 
-  # MyIdSDK — vendored xcframework (no SPM step needed for consumers)
-  s.vendored_frameworks = "ios/MyIdSDK.xcframework"
+  # ---------------------------------------------------------------------------
+  # MyIdSDK — consumers must place MyIdSDK.xcframework in their ios/Frameworks/
+  # See README for setup instructions.
+  # ---------------------------------------------------------------------------
 
   # ---------------------------------------------------------------------------
   # New Architecture support
@@ -32,6 +33,8 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     "DEFINES_MODULE" => "YES",
-    "SWIFT_COMPILATION_MODE" => "wholemodule"
+    "SWIFT_COMPILATION_MODE" => "wholemodule",
+    "FRAMEWORK_SEARCH_PATHS" => '$(inherited) "${PODS_ROOT}/../../ios/Frameworks"',
+    "HEADER_SEARCH_PATHS" => '$(inherited) "${PODS_ROOT}/../../ios/Frameworks/MyIdSDK.xcframework/ios-arm64/MyIdSDK.framework/Headers"'
   }
 end
