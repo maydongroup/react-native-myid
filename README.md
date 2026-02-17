@@ -24,17 +24,19 @@ No additional setup needed — auto-linking and dependency resolution are handle
 
 ### iOS
 
-1. Add the **MyIdSDK** package in Xcode via Swift Package Manager:
+1. Download **MyIdSDK.xcframework** and place it in your project's `ios/` folder:
 
-   **File → Add Package Dependencies…** → enter URL:
-
+   ```bash
+   cd ios
+   curl -L -o MyIdSDK.xcframework.zip \
+     "https://gitlab.myid.uz/myid-public-code/myid-ios-sdk/-/releases"
+   unzip -o MyIdSDK.xcframework.zip
+   rm MyIdSDK.xcframework.zip
    ```
-   https://gitlab.myid.uz/myid-public-code/myid-ios-sdk
-   ```
 
-   Select version **3.1.3** or later.
+   > Or download it manually from the [MyID iOS SDK releases](https://gitlab.myid.uz/myid-public-code/myid-ios-sdk/-/releases) and place `MyIdSDK.xcframework` in your `ios/` directory.
 
-2. Install pods and add camera permission:
+2. Install pods:
 
    ```bash
    cd ios && pod install
@@ -46,8 +48,6 @@ No additional setup needed — auto-linking and dependency resolution are handle
    <key>NSCameraUsageDescription</key>
    <string>Camera access is required for identity verification</string>
    ```
-
-That's it — `npm install`, one SPM add, `pod install`.
 
 ## Usage
 

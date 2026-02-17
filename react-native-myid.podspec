@@ -13,19 +13,15 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/example/react-native-myid.git", :tag => "v#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
+  s.exclude_files = "ios/MyIdSDK.xcframework/**/*"
+
+  # MyIdSDK — vendored xcframework (no SPM step needed for consumers)
+  s.vendored_frameworks = "ios/MyIdSDK.xcframework"
 
   # ---------------------------------------------------------------------------
   # New Architecture support
   # ---------------------------------------------------------------------------
   install_modules_dependencies(s)
-
-  # MyID iOS SDK - distributed via Swift Package Manager
-  # Users need to add MyIdSDK package via SPM in Xcode:
-  #   URL: https://gitlab.myid.uz/myid-public-code/myid-ios-sdk
-  #   Version: 3.1.3+
-  #
-  # Or manually embed MyIdSDK.xcframework:
-  #   Download from: https://github.com/javokhirsavriev/myid-ios-sdk/releases
 
   # ML Kit dependencies (required by MyID SDK)
   s.dependency "GoogleMLKit/FaceDetection", "~> 7.0"
