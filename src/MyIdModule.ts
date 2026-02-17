@@ -7,7 +7,7 @@ import { validateConfig } from './validators';
 /**
  * Launches the MyID biometric identification SDK.
  *
- * @param config - SDK configuration. Must include `clientId` and either
+ * @param config - SDK configuration. Must include either
  *   `sessionId` (new flow) or `clientHash` + `clientHashId` (legacy flow).
  *
  * @returns Promise resolving to {@link MyIdResult} with the authorization code.
@@ -17,11 +17,10 @@ import { validateConfig } from './validators';
  *
  * @example
  * ```ts
- * import { startMyId, MyIdError, MyIdErrorCodes, MyIdLocale } from 'react-native-myid';
+ * import { startMyId, MyIdError, MyIdLocale } from 'react-native-myid';
  *
  * try {
  *   const result = await startMyId({
- *     clientId: 'your_client_id',
  *     sessionId: 'uuid-from-backend',
  *     locale: MyIdLocale.EN,
  *   });
@@ -40,10 +39,8 @@ export async function startMyId(config: MyIdConfig): Promise<MyIdResult> {
 
   // ── Build typed native config ─────────────────────────────────────────
   const nativeConfig: NativeMyIdConfig = {
-    clientId: config.clientId,
-    entryType: config.entryType ?? 'AUTH',
+    entryType: config.entryType ?? 'IDENTIFICATION',
     buildMode: config.buildMode ?? 'PRODUCTION',
-    withPhoto: config.withPhoto ?? false,
   };
 
   // Flow-specific fields
@@ -58,11 +55,6 @@ export async function startMyId(config: MyIdConfig): Promise<MyIdResult> {
   }
 
   // Optional fields — only set when provided (avoids sending `undefined`)
-  if (config.passportData) nativeConfig.passportData = config.passportData;
-  if (config.birthDate) nativeConfig.birthDate = config.birthDate;
-  if (config.sdkHash) nativeConfig.sdkHash = config.sdkHash;
-  if (config.externalId) nativeConfig.externalId = config.externalId;
-  if (config.threshold !== undefined) nativeConfig.threshold = config.threshold;
   if (config.locale) nativeConfig.locale = config.locale;
   if (config.cameraShape) nativeConfig.cameraShape = config.cameraShape;
   if (config.organizationDetails) {
@@ -75,7 +67,6 @@ export async function startMyId(config: MyIdConfig): Promise<MyIdResult> {
 
     return {
       code: result.code,
-      comparison: result.comparison != null ? Number(result.comparison) : undefined,
       image: result.image ?? undefined,
     };
   } catch (error: unknown) {

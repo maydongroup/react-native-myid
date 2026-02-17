@@ -1,6 +1,7 @@
 package com.reactnativemyid
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Base64
 import com.facebook.react.bridge.*
@@ -9,18 +10,20 @@ import uz.myid.android.sdk.capture.MyIdConfig
 import uz.myid.android.sdk.capture.MyIdException
 import uz.myid.android.sdk.capture.MyIdResult
 import uz.myid.android.sdk.capture.MyIdResultListener
-import uz.myid.android.sdk.capture.model.MyIdBuildMode
 import uz.myid.android.sdk.capture.model.MyIdCameraShape
 import uz.myid.android.sdk.capture.model.MyIdEntryType
+import uz.myid.android.sdk.capture.model.MyIdEnvironment
+import uz.myid.android.sdk.capture.model.MyIdEvent
+import uz.myid.android.sdk.capture.model.MyIdGraphicFieldType
+import uz.myid.android.sdk.capture.model.MyIdLocale
+import uz.myid.android.sdk.capture.model.MyIdOrganizationDetails
 import java.io.ByteArrayOutputStream
-import java.util.Locale
 
 class MyIdModule(
     private val reactContext: ReactApplicationContext
-) : ReactContextBaseJavaModule(reactContext), MyIdResultListener {
+) : ReactContextBaseJavaModule(reactContext), MyIdResultListener, ActivityEventListener {
 
     private var promise: Promise? = null
-    private var withPhoto: Boolean = false
     private val client = MyIdClient()
 
     companion object {
@@ -31,12 +34,15 @@ class MyIdModule(
         private const val REQUEST_CODE = 1404
     }
 
+    init {
+        reactContext.addActivityEventListener(this)
+    }
+
     override fun getName(): String = NAME
 
     @ReactMethod
     fun start(config: ReadableMap, promise: Promise) {
         this.promise = promise
-        this.withPhoto = config.getBooleanSafe("withPhoto")
 
         val activity = currentActivity
         if (activity == null) {
@@ -45,61 +51,51 @@ class MyIdModule(
         }
 
         try {
-            val clientId = config.getString("clientId") ?: run {
-                promise.reject(ERROR_SDK, "clientId is required")
-                return
-            }
+            val sessionId = config.getStringSafe("sessionId") ?: ""
 
-            val builder = MyIdConfig.Builder(clientId)
-
-            // --- New flow: sessionId ---
-            config.getStringSafe("sessionId")?.let { builder.withSessionId(it) }
+            val builder = MyIdConfig.Builder(sessionId = sessionId)
 
             // --- Old flow: clientHash + clientHashId ---
-            config.getStringSafe("clientHash")?.let { builder.withClientHash(it) }
-            config.getStringSafe("clientHashId")?.let { builder.withClientHashId(it) }
-
-            // --- Common optional fields ---
-            config.getStringSafe("passportData")?.let { builder.withPassportData(it) }
-            config.getStringSafe("birthDate")?.let { builder.withBirthDate(it) }
-            config.getStringSafe("sdkHash")?.let { builder.withSdkHash(it) }
-            config.getStringSafe("externalId")?.let { builder.withExternalId(it) }
-
-            if (config.hasKey("threshold")) {
-                builder.withThreshold(config.getDouble("threshold").toFloat())
+            val clientHash = config.getStringSafe("clientHash")
+            val clientHashId = config.getStringSafe("clientHashId")
+            if (clientHash != null && clientHashId != null) {
+                builder.withClientHash(
+                    clientHash = clientHash,
+                    clientHashId = clientHashId
+                )
             }
 
             // Entry type
             when (config.getStringSafe("entryType")) {
-                "AUTH" -> builder.withEntryType(MyIdEntryType.AUTH)
-                "FACE" -> builder.withEntryType(MyIdEntryType.FACE)
+                "IDENTIFICATION" -> builder.withEntryType(MyIdEntryType.Identification)
+                "VIDEO_IDENTIFICATION" -> builder.withEntryType(MyIdEntryType.VideoIdentification)
+                "FACE_DETECTION" -> builder.withEntryType(MyIdEntryType.FaceDetection)
             }
 
-            // Build mode
+            // Environment
             when (config.getStringSafe("buildMode")) {
-                "PRODUCTION" -> builder.withBuildMode(MyIdBuildMode.PRODUCTION)
-                "DEBUG" -> builder.withBuildMode(MyIdBuildMode.DEBUG)
+                "PRODUCTION" -> builder.withEnvironment(MyIdEnvironment.Production)
+                "DEBUG" -> builder.withEnvironment(MyIdEnvironment.Debug)
             }
 
             // Locale
-            config.getStringSafe("locale")?.let {
-                builder.withLocale(Locale(it))
+            when (config.getStringSafe("locale")) {
+                "uz" -> builder.withLocale(MyIdLocale.Uzbek)
+                "en" -> builder.withLocale(MyIdLocale.English)
+                "ru" -> builder.withLocale(MyIdLocale.Russian)
             }
 
             // Camera shape
             when (config.getStringSafe("cameraShape")) {
-                "CIRCLE" -> builder.withCameraShape(MyIdCameraShape.CIRCLE)
-                "ELLIPSE" -> builder.withCameraShape(MyIdCameraShape.ELLIPSE)
+                "CIRCLE" -> builder.withCameraShape(MyIdCameraShape.Circle)
+                "ELLIPSE" -> builder.withCameraShape(MyIdCameraShape.Ellipse)
             }
-
-            // Photo
-            builder.withPhoto(withPhoto)
 
             // Organization details
             if (config.hasKey("organizationDetails")) {
                 config.getMap("organizationDetails")?.let { orgMap ->
-                    val orgDetails = uz.myid.android.sdk.capture.model.OrganizationDetails(
-                        phoneNumber = orgMap.getStringSafe("phoneNumber") ?: "712022202"
+                    val orgDetails = MyIdOrganizationDetails(
+                        phoneNumber = orgMap.getStringSafe("phoneNumber") ?: ""
                     )
                     builder.withOrganizationDetails(orgDetails)
                 }
@@ -107,13 +103,24 @@ class MyIdModule(
 
             val myIdConfig = builder.build()
 
-            val intent = client.createIntent(activity = activity, myIdConfig = myIdConfig)
-            val activityResultHelper = client.takeUserResult(listener = this)
-            activityResultHelper.launch(intent)
+            // Use startActivityForResult pattern (works with React Native modules)
+            client.startActivityForResult(activity, REQUEST_CODE, myIdConfig)
 
         } catch (e: Exception) {
             promise.reject(ERROR_SDK, e.message ?: "Unknown error starting MyID SDK")
         }
+    }
+
+    // --- ActivityEventListener ---
+
+    override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_CODE) {
+            client.handleActivityResult(resultCode, this)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        // Not used
     }
 
     // --- MyIdResultListener callbacks ---
@@ -121,10 +128,10 @@ class MyIdModule(
     override fun onSuccess(result: MyIdResult) {
         val map = Arguments.createMap().apply {
             putString("code", result.code)
-            result.comparison?.let { putDouble("comparison", it.toDouble()) }
 
-            if (withPhoto && result.bitmap != null) {
-                putString("image", bitmapToBase64(result.bitmap!!))
+            val bitmap = result.getGraphicFieldImageByType(MyIdGraphicFieldType.FacePortrait)
+            if (bitmap != null) {
+                putString("image", bitmapToBase64(bitmap))
             }
         }
         promise?.resolve(map)
@@ -141,6 +148,10 @@ class MyIdModule(
         promise = null
     }
 
+    override fun onEvent(event: MyIdEvent) {
+        // Optional: can emit events to JS if needed in the future
+    }
+
     // --- Helpers ---
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
@@ -152,9 +163,5 @@ class MyIdModule(
 
     private fun ReadableMap.getStringSafe(key: String): String? {
         return if (hasKey(key) && !isNull(key)) getString(key) else null
-    }
-
-    private fun ReadableMap.getBooleanSafe(key: String): Boolean {
-        return if (hasKey(key)) getBoolean(key) else false
     }
 }

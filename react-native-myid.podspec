@@ -22,10 +22,6 @@ Pod::Spec.new do |s|
   # MyID SDK (available as a CocoaPod)
   s.dependency "MyIdSDK"
 
-  # ML Kit dependencies (required by MyID SDK)
-  s.dependency "GoogleMLKit/FaceDetection", "~> 7.0"
-  s.dependency "GoogleMLKit/TextRecognition", "~> 7.0"
-
   s.swift_version = "5.0"
   s.static_framework = true
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<resources>
+    <string name="app_name">MyID SDK</string>
+    <string name="session_id">Session ID</string>
+    <string name="client_hash">Client Hash</string>
+    <string name="client_hash_id">Client Hash ID</string>
+    <string name="prod">Production</string>
+    <string name="dev">Debug</string>
+    <string name="auth">Photo Identification</string>
+    <string name="video">Video Identification</string>
+    <string name="face">Face detection</string>
+    <string name="front">Front</string>
+    <string name="back">Back</string>
+    <string name="jpeg">JPEG</string>
+    <string name="png">PNG</string>
+    <string name="low">480P</string>
+    <string name="high">720P</string>
+    <string name="circle">Circle</string>
+    <string name="ellipse">Ellipse</string>
+    <string name="uzbek">Uzbek</string>
+    <string name="english">English</string>
+    <string name="russian">Russian</string>
+    <string name="scan_face_data">Scan face data</string>
+</resources>

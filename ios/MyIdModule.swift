@@ -14,7 +14,6 @@ class MyIdModule: NSObject, RCTBridgeModule {
         return "MyIdModule"
     }
 
-    // Required to run on main thread (presents UI)
     static func requiresMainQueueSetup() -> Bool {
         return true
     }
@@ -32,11 +31,6 @@ class MyIdModule: NSObject, RCTBridgeModule {
 
             let myIdConfig = MyIdConfig()
 
-            // Client ID (required)
-            if let clientId = config["clientId"] as? String {
-                myIdConfig.clientId = clientId
-            }
-
             // --- New flow: sessionId ---
             if let sessionId = config["sessionId"] as? String {
                 myIdConfig.sessionId = sessionId
@@ -50,41 +44,29 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 myIdConfig.clientHashId = clientHashId
             }
 
-            // --- Common optional fields ---
-            if let passportData = config["passportData"] as? String {
-                myIdConfig.passportData = passportData
-            }
-            if let birthDate = config["birthDate"] as? String {
-                myIdConfig.dateOfBirth = birthDate
-            }
-            if let externalId = config["externalId"] as? String {
-                myIdConfig.externalId = externalId
-            }
-            if let threshold = config["threshold"] as? Double {
-                myIdConfig.threshold = Float(threshold)
-            }
-
             // Entry type
             if let entryType = config["entryType"] as? String {
                 switch entryType {
-                case "AUTH":
-                    myIdConfig.entryType = MyIdEntryType.AUTH
-                case "FACE":
-                    myIdConfig.entryType = MyIdEntryType.FACE
+                case "IDENTIFICATION":
+                    myIdConfig.entryType = .identification
+                case "VIDEO_IDENTIFICATION":
+                    myIdConfig.entryType = .videoIdentification
+                case "FACE_DETECTION":
+                    myIdConfig.entryType = .faceDetection
                 default:
-                    myIdConfig.entryType = MyIdEntryType.AUTH
+                    myIdConfig.entryType = .identification
                 }
             }
 
-            // Build mode
+            // Environment (build mode)
             if let buildMode = config["buildMode"] as? String {
                 switch buildMode {
                 case "PRODUCTION":
-                    myIdConfig.buildMode = MyIdBuildMode.PRODUCTION
+                    myIdConfig.environment = .production
                 case "DEBUG":
-                    myIdConfig.buildMode = MyIdBuildMode.DEBUG
+                    myIdConfig.environment = .debug
                 default:
-                    myIdConfig.buildMode = MyIdBuildMode.PRODUCTION
+                    myIdConfig.environment = .production
                 }
             }
 
@@ -92,18 +74,36 @@ class MyIdModule: NSObject, RCTBridgeModule {
             if let locale = config["locale"] as? String {
                 switch locale {
                 case "uz":
-                    myIdConfig.locale = MyIdLocale.UZ
+                    myIdConfig.locale = .uzbek
                 case "en":
-                    myIdConfig.locale = MyIdLocale.EN
+                    myIdConfig.locale = .english
                 case "ru":
-                    myIdConfig.locale = MyIdLocale.RU
+                    myIdConfig.locale = .russian
                 default:
                     break
                 }
             }
 
-            // Photo
-            myIdConfig.withPhoto = self.withPhoto
+            // Camera shape
+            if let cameraShape = config["cameraShape"] as? String {
+                switch cameraShape {
+                case "CIRCLE":
+                    myIdConfig.cameraShape = .circle
+                case "ELLIPSE":
+                    myIdConfig.cameraShape = .ellipse
+                default:
+                    myIdConfig.cameraShape = .circle
+                }
+            }
+
+            // Organization details
+            if let orgDetails = config["organizationDetails"] as? NSDictionary {
+                let details = MyIdOrganizationDetails()
+                if let phoneNumber = orgDetails["phoneNumber"] as? String {
+                    details.phoneNumber = phoneNumber
+                }
+                myIdConfig.organizationDetails = details
+            }
 
             MyIdClient.start(withConfig: myIdConfig, withDelegate: self)
         }
@@ -118,7 +118,6 @@ extension MyIdModule: MyIdClientDelegate {
         var response: [String: Any] = [:]
 
         response["code"] = result.code
-        response["comparison"] = result.comparisonValue
 
         if withPhoto, let image = result.image {
             if let imageData = image.jpegData(compressionQuality: 0.9) {
@@ -131,8 +130,8 @@ extension MyIdModule: MyIdClientDelegate {
     }
 
     func onError(exception: MyIdException) {
-        let code = String(exception.code ?? 0)
-        let message = exception.message ?? "MyID SDK error"
+        let code = String(exception.code)
+        let message = exception.message
         reject?(code, message, nil)
         cleanup()
     }
@@ -140,6 +139,10 @@ extension MyIdModule: MyIdClientDelegate {
     func onUserExited() {
         reject?("MYID_USER_EXITED", "User exited MyID SDK", nil)
         cleanup()
+    }
+
+    func onEvent(event: MyIdEvent) {
+        // Optional: can emit events to JS if needed in the future
     }
 
     private func cleanup() {
@@ -153,6 +156,5 @@ extension MyIdModule: MyIdClientDelegate {
 #if RCT_NEW_ARCH_ENABLED
 extension MyIdModule: NativeMyIdModuleSpec {
     // The `start` method is already implemented above.
-    // This conformance ensures Codegen-generated protocol is satisfied.
 }
 #endif

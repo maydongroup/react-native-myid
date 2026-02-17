@@ -4,16 +4,18 @@
 
 /**
  * MyID SDK entry type.
- * - `AUTH`: Full identification flow (liveness + face matching against passport).
- * - `FACE`: Face detection only, returns a face image without verification.
+ * - `IDENTIFICATION`: Full identification flow (liveness + face matching).
+ * - `VIDEO_IDENTIFICATION`: Video-based identification.
+ * - `FACE_DETECTION`: Face detection only.
  */
 export enum MyIdEntryType {
-  AUTH = 'AUTH',
-  FACE = 'FACE',
+  IDENTIFICATION = 'IDENTIFICATION',
+  VIDEO_IDENTIFICATION = 'VIDEO_IDENTIFICATION',
+  FACE_DETECTION = 'FACE_DETECTION',
 }
 
 /**
- * MyID SDK build mode.
+ * MyID SDK build mode (maps to `MyIdEnvironment` on native).
  * - `PRODUCTION`: Production environment.
  * - `DEBUG`: Sandbox environment for testing.
  */
@@ -47,10 +49,8 @@ export enum MyIdCameraShape {
  * Organization branding details shown in the SDK.
  */
 export interface MyIdOrganizationDetails {
-  /** Support phone number displayed on error screens. Default: 712022202 */
+  /** Support phone number displayed on error screens. */
   phoneNumber?: string;
-  /** Logo resource name (platform-specific). Displayed on the input screen. */
-  logo?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,40 +64,9 @@ export interface MyIdOrganizationDetails {
  * @see {@link MyIdHashConfig}    — legacy client-hash flow.
  */
 interface MyIdBaseConfig {
-  /** Client ID issued by MyID. Required for both flows. */
-  clientId: string;
-
   /**
-   * Passport serial number (e.g., "AA1234567") or PINFL (14 digits).
-   * If provided, SDK skips the manual data entry screen.
-   */
-  passportData?: string;
-
-  /** Date of birth in format `dd.MM.yyyy`. */
-  birthDate?: string;
-
-  /**
-   * SDK hash from a previous successful identification.
-   * Can be used instead of passport data for returning users.
-   * Must be exactly 32 characters.
-   */
-  sdkHash?: string;
-
-  /**
-   * External ID for tracking (UUID4 format, 36 chars).
-   * Must be unique per request. Enables blurry photo recommendation screen.
-   */
-  externalId?: string;
-
-  /**
-   * Face comparison threshold (0.50 – 0.99).
-   * @default 0.50
-   */
-  threshold?: number;
-
-  /**
-   * Entry type: full identification (`AUTH`) or face detection only (`FACE`).
-   * @default MyIdEntryType.AUTH
+   * Entry type: identification, video identification, or face detection.
+   * @default MyIdEntryType.IDENTIFICATION
    */
   entryType?: MyIdEntryType;
 
@@ -109,7 +78,7 @@ interface MyIdBaseConfig {
 
   /**
    * UI language.
-   * @default MyIdLocale.UZ (Android) / MyIdLocale.RU (iOS)
+   * @default MyIdLocale.UZ
    */
   locale?: MyIdLocale;
 
@@ -118,12 +87,6 @@ interface MyIdBaseConfig {
    * @default MyIdCameraShape.CIRCLE
    */
   cameraShape?: MyIdCameraShape;
-
-  /**
-   * Whether to return the captured face image as base64.
-   * @default false
-   */
-  withPhoto?: boolean;
 
   /** Organization branding details. */
   organizationDetails?: MyIdOrganizationDetails;
@@ -178,22 +141,13 @@ export interface MyIdHashConfig extends MyIdBaseConfig {
  * ```ts
  * // ✅ Session flow
  * const config: MyIdConfig = {
- *   clientId: 'abc',
  *   sessionId: 'uuid-from-backend',
  * };
  *
  * // ✅ Hash flow
  * const config: MyIdConfig = {
- *   clientId: 'abc',
  *   clientHash: 'hash',
  *   clientHashId: 'slug',
- * };
- *
- * // ❌ Compile error — cannot mix flows:
- * const config: MyIdConfig = {
- *   clientId: 'abc',
- *   sessionId: 'uuid',
- *   clientHash: 'hash', // Error!
  * };
  * ```
  */
@@ -209,22 +163,15 @@ export type MyIdConfig = MyIdSessionConfig | MyIdHashConfig;
 export interface MyIdResult {
   /**
    * Authorization code to exchange for user data on your backend.
-   * - Old flow: exchange via `POST /api/v1/oauth2/access-token`
-   * - New flow: exchange via `GET /api/v1/sdk/data?code=`
+   * Exchange via `GET /api/v1/sdk/data?code=`
    *
    * ⚠️ Valid for 5 minutes, single use only.
    */
   code: string;
 
   /**
-   * Face comparison value (0.0 – 1.0).
-   * Higher = more confident match. Only available with `AUTH` entry type.
-   */
-  comparison?: number;
-
-  /**
    * Captured face image as a base64-encoded string.
-   * Only returned if `withPhoto` was set to `true` in config.
+   * Only returned if the SDK captured a photo.
    */
   image?: string;
 }
@@ -235,8 +182,6 @@ export interface MyIdResult {
 
 /**
  * Error codes returned by the MyID SDK.
- *
- * Use with `MyIdError.code` to determine the failure reason.
  *
  * @example
  * ```ts
@@ -328,31 +273,11 @@ export const MyIdErrorCodes = {
 
 /**
  * Union of all possible numeric error codes from `MyIdErrorCodes`.
- *
- * Useful for exhaustive switch statements and type narrowing.
  */
 export type MyIdErrorCode = (typeof MyIdErrorCodes)[keyof typeof MyIdErrorCodes];
 
 /**
  * Error thrown when the MyID SDK encounters an issue or the user exits.
- *
- * Extends `Error` so it works with normal `try/catch`. Use `instanceof`
- * to narrow the type and access `.code` / `.isUserExit`.
- *
- * @example
- * ```ts
- * try {
- *   const result = await startMyId(config);
- * } catch (err) {
- *   if (err instanceof MyIdError) {
- *     if (err.isUserExit) {
- *       // user tapped back / cancelled — handle gracefully
- *       return;
- *     }
- *     console.error(`SDK error ${err.code}: ${err.message}`);
- *   }
- * }
- * ```
  */
 export class MyIdError extends Error {
   /** Numeric error code. See {@link MyIdErrorCodes}. */
