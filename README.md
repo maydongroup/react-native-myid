@@ -1,4 +1,4 @@
-# react-native-myid
+# @maydon_tech/react-native-myid
 
 React Native bridge for the [MyID](https://myid.uz/) biometric identification SDK (iOS & Android).
 
@@ -15,7 +15,7 @@ Supports both the **session-based flow** (`sessionId`) and the **legacy flow** (
 ## Installation
 
 ```bash
-npm install react-native-myid
+npm install @maydon_tech/react-native-myid
 ```
 
 ### Android
@@ -54,7 +54,7 @@ That's it — `npm install`, one SPM add, `pod install`.
 ### Session Flow (Recommended)
 
 ```typescript
-import { startMyId, MyIdError, MyIdLocale, MyIdBuildMode } from 'react-native-myid';
+import { startMyId, MyIdError, MyIdLocale, MyIdBuildMode } from '@maydon_tech/react-native-myid';
 
 // 1. Get sessionId from YOUR backend
 //    Backend calls: POST https://api.myid.uz/api/v2/sdk/sessions
@@ -83,7 +83,7 @@ try {
 ### Legacy Flow (Client Hash)
 
 ```typescript
-import { startMyId, MyIdError } from 'react-native-myid';
+import { startMyId, MyIdError } from '@maydon_tech/react-native-myid';
 
 try {
   const result = await startMyId({
@@ -147,7 +147,7 @@ interface MyIdResult {
 All errors are thrown as `MyIdError` instances with `code`, `message`, and `isUserExit` properties:
 
 ```typescript
-import { startMyId, MyIdError, MyIdErrorCodes } from 'react-native-myid';
+import { startMyId, MyIdError, MyIdErrorCodes } from '@maydon_tech/react-native-myid';
 
 try {
   const result = await startMyId(config);
