@@ -6,14 +6,38 @@ import { NativeModules } from 'react-native';
 
 /** Shape of the config object sent across the bridge to native. */
 export interface NativeMyIdConfig {
+  // Auth
   sessionId?: string;
   clientHash?: string;
   clientHashId?: string;
+
+  // Core
   entryType: string;
   buildMode: string;
   locale?: string;
+  residency?: string;
+  minAge?: number;
+
+  // Camera
   cameraShape?: string;
+  cameraSelector?: string;
+  cameraResolution?: string;
+
+  // Image
+  imageFormat?: string;
+
+  // UI
+  showErrorScreen?: boolean;
+  screenOrientation?: string;
+  presentationStyle?: string;
+  withSoundGuides?: boolean;
+  distance?: number;
+
+  // Organization
   organizationDetails?: { phoneNumber?: string };
+
+  // Huawei
+  huaweiAppId?: string;
 }
 
 /** Shape of the raw result dictionary returned from the native side. */

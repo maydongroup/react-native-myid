@@ -14,16 +14,14 @@ import type { MyIdConfig } from './types';
  * Throws with a clear message if any parameter is invalid.
  */
 export function validateConfig(config: MyIdConfig): void {
-  // Must have either sessionId OR (clientHash + clientHashId)
-  const hasSession = 'sessionId' in config && !!config.sessionId;
-  const hasHash =
-    'clientHash' in config && !!config.clientHash &&
-    'clientHashId' in config && !!config.clientHashId;
+  // Must have at least sessionId or (clientHash + clientHashId)
+  const hasSession = !!config.sessionId;
+  const hasHash = !!config.clientHash && !!config.clientHashId;
 
   if (!hasSession && !hasHash) {
     throw new Error(
-      'react-native-myid: You must provide either `sessionId` (new flow) ' +
-        'or both `clientHash` + `clientHashId` (legacy flow).',
+      'react-native-myid: You must provide either `sessionId` ' +
+        'or both `clientHash` + `clientHashId`.',
     );
   }
 }

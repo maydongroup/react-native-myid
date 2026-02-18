@@ -8,7 +8,7 @@ import { validateConfig } from './validators';
  * Launches the MyID biometric identification SDK.
  *
  * @param config - SDK configuration. Must include either
- *   `sessionId` (new flow) or `clientHash` + `clientHashId` (legacy flow).
+ *   `sessionId` or `clientHash` + `clientHashId` (or all three).
  *
  * @returns Promise resolving to {@link MyIdResult} with the authorization code.
  *
@@ -17,11 +17,14 @@ import { validateConfig } from './validators';
  *
  * @example
  * ```ts
- * import { startMyId, MyIdError, MyIdLocale } from 'react-native-myid';
+ * import { startMyId, MyIdError, MyIdBuildMode, MyIdLocale } from '@maydon_tech/react-native-myid';
  *
  * try {
  *   const result = await startMyId({
  *     sessionId: 'uuid-from-backend',
+ *     clientHash: 'hash-from-myid-team',
+ *     clientHashId: 'hash-id-from-myid-team',
+ *     buildMode: MyIdBuildMode.PRODUCTION,
  *     locale: MyIdLocale.EN,
  *   });
  *   // Send result.code to your backend
@@ -43,23 +46,38 @@ export async function startMyId(config: MyIdConfig): Promise<MyIdResult> {
     buildMode: config.buildMode ?? 'PRODUCTION',
   };
 
-  // Flow-specific fields
-  if ('sessionId' in config && config.sessionId) {
-    nativeConfig.sessionId = config.sessionId;
-  }
-  if ('clientHash' in config && config.clientHash) {
-    nativeConfig.clientHash = config.clientHash;
-  }
-  if ('clientHashId' in config && config.clientHashId) {
-    nativeConfig.clientHashId = config.clientHashId;
-  }
+  // Auth fields
+  if (config.sessionId) nativeConfig.sessionId = config.sessionId;
+  if (config.clientHash) nativeConfig.clientHash = config.clientHash;
+  if (config.clientHashId) nativeConfig.clientHashId = config.clientHashId;
 
-  // Optional fields — only set when provided (avoids sending `undefined`)
+  // Core options
   if (config.locale) nativeConfig.locale = config.locale;
+  if (config.residency) nativeConfig.residency = config.residency;
+  if (config.minAge != null) nativeConfig.minAge = config.minAge;
+
+  // Camera options
   if (config.cameraShape) nativeConfig.cameraShape = config.cameraShape;
+  if (config.cameraSelector) nativeConfig.cameraSelector = config.cameraSelector;
+  if (config.cameraResolution) nativeConfig.cameraResolution = config.cameraResolution;
+
+  // Image options
+  if (config.imageFormat) nativeConfig.imageFormat = config.imageFormat;
+
+  // UI options
+  if (config.showErrorScreen != null) nativeConfig.showErrorScreen = config.showErrorScreen;
+  if (config.screenOrientation) nativeConfig.screenOrientation = config.screenOrientation;
+  if (config.presentationStyle) nativeConfig.presentationStyle = config.presentationStyle;
+  if (config.withSoundGuides != null) nativeConfig.withSoundGuides = config.withSoundGuides;
+  if (config.distance != null) nativeConfig.distance = config.distance;
+
+  // Organization
   if (config.organizationDetails) {
     nativeConfig.organizationDetails = config.organizationDetails;
   }
+
+  // Huawei
+  if (config.huaweiAppId) nativeConfig.huaweiAppId = config.huaweiAppId;
 
   // ── Call native module ────────────────────────────────────────────────
   try {

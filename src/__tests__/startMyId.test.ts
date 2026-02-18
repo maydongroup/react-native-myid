@@ -8,7 +8,7 @@ import { NativeModules } from 'react-native';
 
 import { startMyId } from '../MyIdModule';
 import { MyIdError, MyIdErrorCodes } from '../types';
-import type { MyIdSessionConfig, MyIdHashConfig } from '../types';
+import type { MyIdConfig } from '../types';
 
 const mockStart = NativeModules.MyIdModule.start as jest.Mock;
 
@@ -16,15 +16,24 @@ const mockStart = NativeModules.MyIdModule.start as jest.Mock;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function sessionConfig(overrides: Partial<MyIdSessionConfig> = {}): MyIdSessionConfig {
+function sessionConfig(overrides: Partial<MyIdConfig> = {}): MyIdConfig {
   return {
     sessionId: 'test-session',
     ...overrides,
   };
 }
 
-function hashConfig(overrides: Partial<MyIdHashConfig> = {}): MyIdHashConfig {
+function hashConfig(overrides: Partial<MyIdConfig> = {}): MyIdConfig {
   return {
+    clientHash: 'test-hash',
+    clientHashId: 'test-slug',
+    ...overrides,
+  };
+}
+
+function fullConfig(overrides: Partial<MyIdConfig> = {}): MyIdConfig {
+  return {
+    sessionId: 'test-session',
     clientHash: 'test-hash',
     clientHashId: 'test-slug',
     ...overrides,
@@ -91,6 +100,17 @@ describe('startMyId', () => {
       expect(sentConfig.sessionId).toBeUndefined();
     });
 
+    it('should send all three when combined config provided', async () => {
+      mockStart.mockResolvedValue({ code: 'abc' });
+
+      await startMyId(fullConfig());
+      const sentConfig = mockStart.mock.calls[0][0];
+
+      expect(sentConfig.sessionId).toBe('test-session');
+      expect(sentConfig.clientHash).toBe('test-hash');
+      expect(sentConfig.clientHashId).toBe('test-slug');
+    });
+
     it('should set defaults for entryType and buildMode', async () => {
       mockStart.mockResolvedValue({ code: 'abc' });
 
@@ -114,6 +134,58 @@ describe('startMyId', () => {
 
       expect(sentConfig.locale).toBe('en');
       expect(sentConfig.cameraShape).toBe('ELLIPSE');
+    });
+
+    it('should forward all new config options when provided', async () => {
+      mockStart.mockResolvedValue({ code: 'abc' });
+
+      await startMyId(
+        sessionConfig({
+          residency: 'USER_DEFINED' as any,
+          minAge: 18,
+          cameraSelector: 'BACK' as any,
+          cameraResolution: 'HIGH' as any,
+          imageFormat: 'PNG' as any,
+          showErrorScreen: false,
+          screenOrientation: 'LANDSCAPE' as any,
+          presentationStyle: 'SHEET' as any,
+          withSoundGuides: false,
+          distance: 0.8,
+          huaweiAppId: 'huawei-123',
+        }),
+      );
+      const sentConfig = mockStart.mock.calls[0][0];
+
+      expect(sentConfig.residency).toBe('USER_DEFINED');
+      expect(sentConfig.minAge).toBe(18);
+      expect(sentConfig.cameraSelector).toBe('BACK');
+      expect(sentConfig.cameraResolution).toBe('HIGH');
+      expect(sentConfig.imageFormat).toBe('PNG');
+      expect(sentConfig.showErrorScreen).toBe(false);
+      expect(sentConfig.screenOrientation).toBe('LANDSCAPE');
+      expect(sentConfig.presentationStyle).toBe('SHEET');
+      expect(sentConfig.withSoundGuides).toBe(false);
+      expect(sentConfig.distance).toBe(0.8);
+      expect(sentConfig.huaweiAppId).toBe('huawei-123');
+    });
+
+    it('should not include unset optional fields in native config', async () => {
+      mockStart.mockResolvedValue({ code: 'abc' });
+
+      await startMyId(sessionConfig());
+      const sentConfig = mockStart.mock.calls[0][0];
+
+      expect(sentConfig.residency).toBeUndefined();
+      expect(sentConfig.minAge).toBeUndefined();
+      expect(sentConfig.cameraSelector).toBeUndefined();
+      expect(sentConfig.cameraResolution).toBeUndefined();
+      expect(sentConfig.imageFormat).toBeUndefined();
+      expect(sentConfig.showErrorScreen).toBeUndefined();
+      expect(sentConfig.screenOrientation).toBeUndefined();
+      expect(sentConfig.presentationStyle).toBeUndefined();
+      expect(sentConfig.withSoundGuides).toBeUndefined();
+      expect(sentConfig.distance).toBeUndefined();
+      expect(sentConfig.huaweiAppId).toBeUndefined();
     });
   });
 

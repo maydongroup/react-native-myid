@@ -2,22 +2,31 @@
  * Tests for runtime validators.
  */
 import { validateConfig } from '../validators';
-import type { MyIdSessionConfig, MyIdHashConfig } from '../types';
+import type { MyIdConfig } from '../types';
 
 // ---------------------------------------------------------------------------
-// Helper to build a minimal valid session config
+// Helper to build a minimal valid config
 // ---------------------------------------------------------------------------
 function validSessionConfig(
-  overrides: Partial<MyIdSessionConfig> = {},
-): MyIdSessionConfig {
+  overrides: Partial<MyIdConfig> = {},
+): MyIdConfig {
   return {
     sessionId: 'test-session-id',
     ...overrides,
   };
 }
 
-function validHashConfig(overrides: Partial<MyIdHashConfig> = {}): MyIdHashConfig {
+function validHashConfig(overrides: Partial<MyIdConfig> = {}): MyIdConfig {
   return {
+    clientHash: 'test-hash',
+    clientHashId: 'test-slug',
+    ...overrides,
+  };
+}
+
+function validFullConfig(overrides: Partial<MyIdConfig> = {}): MyIdConfig {
+  return {
+    sessionId: 'test-session-id',
     clientHash: 'test-hash',
     clientHashId: 'test-slug',
     ...overrides,
@@ -36,6 +45,10 @@ describe('validateConfig', () => {
 
     it('should pass for valid hash config', () => {
       expect(() => validateConfig(validHashConfig())).not.toThrow();
+    });
+
+    it('should pass when all three (sessionId + clientHash + clientHashId) are provided', () => {
+      expect(() => validateConfig(validFullConfig())).not.toThrow();
     });
 
     it('should throw when neither sessionId nor clientHash is provided', () => {

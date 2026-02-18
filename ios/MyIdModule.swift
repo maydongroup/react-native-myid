@@ -8,7 +8,6 @@ class MyIdModule: NSObject, RCTBridgeModule {
 
     private var resolve: RCTPromiseResolveBlock?
     private var reject: RCTPromiseRejectBlock?
-    private var withPhoto: Bool = false
 
     static func moduleName() -> String! {
         return "MyIdModule"
@@ -24,19 +23,16 @@ class MyIdModule: NSObject, RCTBridgeModule {
                rejecter reject: @escaping RCTPromiseRejectBlock) {
         self.resolve = resolve
         self.reject = reject
-        self.withPhoto = config["withPhoto"] as? Bool ?? false
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
             let myIdConfig = MyIdConfig()
 
-            // --- New flow: sessionId ---
+            // ── Auth fields ──────────────────────────────────────────────
             if let sessionId = config["sessionId"] as? String {
                 myIdConfig.sessionId = sessionId
             }
-
-            // --- Old flow: clientHash + clientHashId ---
             if let clientHash = config["clientHash"] as? String {
                 myIdConfig.clientHash = clientHash
             }
@@ -44,7 +40,7 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 myIdConfig.clientHashId = clientHashId
             }
 
-            // Entry type
+            // ── Entry type ───────────────────────────────────────────────
             if let entryType = config["entryType"] as? String {
                 switch entryType {
                 case "IDENTIFICATION":
@@ -58,7 +54,7 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 }
             }
 
-            // Environment (build mode)
+            // ── Environment (build mode) ─────────────────────────────────
             if let buildMode = config["buildMode"] as? String {
                 switch buildMode {
                 case "PRODUCTION":
@@ -70,7 +66,7 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 }
             }
 
-            // Locale
+            // ── Locale ───────────────────────────────────────────────────
             if let locale = config["locale"] as? String {
                 switch locale {
                 case "uz":
@@ -84,7 +80,26 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 }
             }
 
-            // Camera shape
+            // ── Residency ────────────────────────────────────────────────
+            if let residency = config["residency"] as? String {
+                switch residency {
+                case "RESIDENT":
+                    myIdConfig.residency = .resident
+                case "NON_RESIDENT":
+                    myIdConfig.residency = .nonResident
+                case "USER_DEFINED":
+                    myIdConfig.residency = .userDefined
+                default:
+                    break
+                }
+            }
+
+            // ── Min age ──────────────────────────────────────────────────
+            if let minAge = config["minAge"] as? Int {
+                myIdConfig.minAge = minAge
+            }
+
+            // ── Camera shape ─────────────────────────────────────────────
             if let cameraShape = config["cameraShape"] as? String {
                 switch cameraShape {
                 case "CIRCLE":
@@ -96,7 +111,41 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 }
             }
 
-            // Organization details
+            // ── Camera selector ──────────────────────────────────────────
+            if let cameraSelector = config["cameraSelector"] as? String {
+                switch cameraSelector {
+                case "FRONT":
+                    myIdConfig.cameraSelector = .front
+                case "BACK":
+                    myIdConfig.cameraSelector = .back
+                default:
+                    break
+                }
+            }
+
+            // ── Distance ─────────────────────────────────────────────────
+            if let distance = config["distance"] as? Float {
+                myIdConfig.distance = distance
+            }
+
+            // ── Show error screen ────────────────────────────────────────
+            if let showErrorScreen = config["showErrorScreen"] as? Bool {
+                myIdConfig.showErrorScreen = showErrorScreen
+            }
+
+            // ── Presentation style ───────────────────────────────────────
+            if let presentationStyle = config["presentationStyle"] as? String {
+                switch presentationStyle {
+                case "FULL_SCREEN":
+                    myIdConfig.presentationStyle = .fullScreen
+                case "SHEET":
+                    myIdConfig.presentationStyle = .sheet
+                default:
+                    break
+                }
+            }
+
+            // ── Organization details ─────────────────────────────────────
             if let orgDetails = config["organizationDetails"] as? NSDictionary {
                 let details = MyIdOrganizationDetails()
                 if let phoneNumber = orgDetails["phoneNumber"] as? String {
@@ -104,6 +153,9 @@ class MyIdModule: NSObject, RCTBridgeModule {
                 }
                 myIdConfig.organizationDetails = details
             }
+
+            // ── Appearance (can be extended in the future) ───────────────
+            // myIdConfig.appearance = ...
 
             MyIdClient.start(withConfig: myIdConfig, withDelegate: self)
         }
@@ -119,7 +171,7 @@ extension MyIdModule: MyIdClientDelegate {
 
         response["code"] = result.code
 
-        if withPhoto, let image = result.image {
+        if let image = result.image {
             if let imageData = image.jpegData(compressionQuality: 0.9) {
                 response["image"] = imageData.base64EncodedString()
             }

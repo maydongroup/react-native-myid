@@ -10,13 +10,18 @@ import uz.myid.android.sdk.capture.MyIdConfig
 import uz.myid.android.sdk.capture.MyIdException
 import uz.myid.android.sdk.capture.MyIdResult
 import uz.myid.android.sdk.capture.MyIdResultListener
+import uz.myid.android.sdk.capture.model.MyIdCameraResolution
+import uz.myid.android.sdk.capture.model.MyIdCameraSelector
 import uz.myid.android.sdk.capture.model.MyIdCameraShape
 import uz.myid.android.sdk.capture.model.MyIdEntryType
 import uz.myid.android.sdk.capture.model.MyIdEnvironment
 import uz.myid.android.sdk.capture.model.MyIdEvent
 import uz.myid.android.sdk.capture.model.MyIdGraphicFieldType
+import uz.myid.android.sdk.capture.model.MyIdImageFormat
 import uz.myid.android.sdk.capture.model.MyIdLocale
 import uz.myid.android.sdk.capture.model.MyIdOrganizationDetails
+import uz.myid.android.sdk.capture.model.MyIdResidency
+import uz.myid.android.sdk.capture.model.MyIdScreenOrientation
 import java.io.ByteArrayOutputStream
 
 class MyIdModule(
@@ -55,7 +60,7 @@ class MyIdModule(
 
             val builder = MyIdConfig.Builder(sessionId = sessionId)
 
-            // --- Old flow: clientHash + clientHashId ---
+            // ── Auth: clientHash + clientHashId ──────────────────────────
             val clientHash = config.getStringSafe("clientHash")
             val clientHashId = config.getStringSafe("clientHashId")
             if (clientHash != null && clientHashId != null) {
@@ -65,33 +70,89 @@ class MyIdModule(
                 )
             }
 
-            // Entry type
+            // ── Entry type ──────────────────────────────────────────────
             when (config.getStringSafe("entryType")) {
                 "IDENTIFICATION" -> builder.withEntryType(MyIdEntryType.Identification)
                 "VIDEO_IDENTIFICATION" -> builder.withEntryType(MyIdEntryType.VideoIdentification)
                 "FACE_DETECTION" -> builder.withEntryType(MyIdEntryType.FaceDetection)
             }
 
-            // Environment
+            // ── Environment ─────────────────────────────────────────────
             when (config.getStringSafe("buildMode")) {
                 "PRODUCTION" -> builder.withEnvironment(MyIdEnvironment.Production)
                 "DEBUG" -> builder.withEnvironment(MyIdEnvironment.Debug)
             }
 
-            // Locale
+            // ── Locale ──────────────────────────────────────────────────
             when (config.getStringSafe("locale")) {
                 "uz" -> builder.withLocale(MyIdLocale.Uzbek)
                 "en" -> builder.withLocale(MyIdLocale.English)
                 "ru" -> builder.withLocale(MyIdLocale.Russian)
             }
 
-            // Camera shape
+            // ── Residency ───────────────────────────────────────────────
+            when (config.getStringSafe("residency")) {
+                "RESIDENT" -> builder.withResidency(MyIdResidency.Resident)
+                "NON_RESIDENT" -> builder.withResidency(MyIdResidency.NonResident)
+                "USER_DEFINED" -> builder.withResidency(MyIdResidency.UserDefined)
+            }
+
+            // ── Min age ─────────────────────────────────────────────────
+            if (config.hasKey("minAge") && !config.isNull("minAge")) {
+                builder.withMinAge(config.getInt("minAge"))
+            }
+
+            // ── Distance ────────────────────────────────────────────────
+            if (config.hasKey("distance") && !config.isNull("distance")) {
+                builder.withDistance(config.getDouble("distance").toFloat())
+            }
+
+            // ── Camera shape ────────────────────────────────────────────
             when (config.getStringSafe("cameraShape")) {
                 "CIRCLE" -> builder.withCameraShape(MyIdCameraShape.Circle)
                 "ELLIPSE" -> builder.withCameraShape(MyIdCameraShape.Ellipse)
             }
 
-            // Organization details
+            // ── Camera selector ─────────────────────────────────────────
+            when (config.getStringSafe("cameraSelector")) {
+                "FRONT" -> builder.withCameraSelector(MyIdCameraSelector.Front)
+                "BACK" -> builder.withCameraSelector(MyIdCameraSelector.Back)
+            }
+
+            // ── Camera resolution ───────────────────────────────────────
+            when (config.getStringSafe("cameraResolution")) {
+                "LOW" -> builder.withCameraResolution(MyIdCameraResolution.Low)
+                "HIGH" -> builder.withCameraResolution(MyIdCameraResolution.High)
+            }
+
+            // ── Image format ────────────────────────────────────────────
+            when (config.getStringSafe("imageFormat")) {
+                "JPEG" -> builder.withImageFormat(MyIdImageFormat.JPEG)
+                "PNG" -> builder.withImageFormat(MyIdImageFormat.PNG)
+            }
+
+            // ── Screen orientation ──────────────────────────────────────
+            when (config.getStringSafe("screenOrientation")) {
+                "PORTRAIT" -> builder.withScreenOrientation(MyIdScreenOrientation.Portrait)
+                "LANDSCAPE" -> builder.withScreenOrientation(MyIdScreenOrientation.Landscape)
+            }
+
+            // ── Show error screen ───────────────────────────────────────
+            if (config.hasKey("showErrorScreen") && !config.isNull("showErrorScreen")) {
+                builder.withErrorScreen(config.getBoolean("showErrorScreen"))
+            }
+
+            // ── Sound guides ────────────────────────────────────────────
+            if (config.hasKey("withSoundGuides") && !config.isNull("withSoundGuides")) {
+                builder.withSoundGuides(config.getBoolean("withSoundGuides"))
+            }
+
+            // ── Huawei App ID ───────────────────────────────────────────
+            config.getStringSafe("huaweiAppId")?.let { appId ->
+                builder.withHuaweiAppId(appId)
+            }
+
+            // ── Organization details ────────────────────────────────────
             if (config.hasKey("organizationDetails")) {
                 config.getMap("organizationDetails")?.let { orgMap ->
                     val orgDetails = MyIdOrganizationDetails(

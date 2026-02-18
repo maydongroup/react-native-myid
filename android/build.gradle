@@ -74,6 +74,9 @@ dependencies {
     implementation "com.facebook.react:react-android:+"
 
     // MyID SDK (from Artifactory)
-    debugImplementation "uz.myid.sdk.capture:myid-capture-sdk-debug:3.1.4"
-    releaseImplementation "uz.myid.sdk.capture:myid-capture-sdk:3.1.4"
+    debugImplementation "uz.myid.sdk.capture:myid-capture-sdk-debug:3.1.5"
+    releaseImplementation "uz.myid.sdk.capture:myid-capture-sdk:3.1.5"
+
+    // MyID Video Capture SDK (required for VideoIdentification entry type)
+    implementation "uz.myid.sdk.capture:myid-video-capture-sdk:3.1.5"
 }

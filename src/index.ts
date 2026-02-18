@@ -7,6 +7,12 @@ export {
   MyIdBuildMode,
   MyIdLocale,
   MyIdCameraShape,
+  MyIdResidency,
+  MyIdCameraSelector,
+  MyIdCameraResolution,
+  MyIdImageFormat,
+  MyIdScreenOrientation,
+  MyIdPresentationStyle,
   MyIdErrorCodes,
   MYID_USER_EXITED,
 } from './types';
@@ -17,8 +23,6 @@ export { MyIdError } from './types';
 // Types (compile-time only)
 export type {
   MyIdConfig,
-  MyIdSessionConfig,
-  MyIdHashConfig,
   MyIdResult,
   MyIdErrorCode,
   MyIdOrganizationDetails,

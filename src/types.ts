@@ -5,8 +5,8 @@
 /**
  * MyID SDK entry type.
  * - `IDENTIFICATION`: Full identification flow (liveness + face matching).
- * - `VIDEO_IDENTIFICATION`: Video-based identification.
- * - `FACE_DETECTION`: Face detection only.
+ * - `VIDEO_IDENTIFICATION`: Video-based identification (Android requires `myid-video-capture-sdk`).
+ * - `FACE_DETECTION`: Face detection only — returns a photo, no backend verification.
  */
 export enum MyIdEntryType {
   IDENTIFICATION = 'IDENTIFICATION',
@@ -34,11 +34,83 @@ export enum MyIdLocale {
 }
 
 /**
- * Camera shape for the face capture screen.
+ * Camera overlay shape for the face capture screen.
  */
 export enum MyIdCameraShape {
   CIRCLE = 'CIRCLE',
   ELLIPSE = 'ELLIPSE',
+}
+
+/**
+ * Residency type.
+ * - `RESIDENT`: Uzbekistan resident (default).
+ * - `NON_RESIDENT`: Foreign citizen.
+ * - `USER_DEFINED`: Let the user select via the SDK's passport input screen.
+ */
+export enum MyIdResidency {
+  RESIDENT = 'RESIDENT',
+  NON_RESIDENT = 'NON_RESIDENT',
+  USER_DEFINED = 'USER_DEFINED',
+}
+
+/**
+ * Camera selector.
+ * - `FRONT`: Front-facing camera (default).
+ * - `BACK`: Rear camera.
+ *
+ * @platform android
+ */
+export enum MyIdCameraSelector {
+  FRONT = 'FRONT',
+  BACK = 'BACK',
+}
+
+/**
+ * Camera resolution.
+ * - `LOW`: Lower resolution, faster processing (default).
+ * - `HIGH`: Higher resolution capture.
+ *
+ * @platform android
+ */
+export enum MyIdCameraResolution {
+  LOW = 'LOW',
+  HIGH = 'HIGH',
+}
+
+/**
+ * Image format for captured photos.
+ * - `JPEG`: JPEG format (default).
+ * - `PNG`: PNG format.
+ *
+ * @platform android
+ */
+export enum MyIdImageFormat {
+  JPEG = 'JPEG',
+  PNG = 'PNG',
+}
+
+/**
+ * Screen orientation during the SDK flow.
+ * - `PORTRAIT`: Portrait mode (default).
+ * - `LANDSCAPE`: Landscape mode.
+ *
+ * @platform android
+ */
+export enum MyIdScreenOrientation {
+  PORTRAIT = 'PORTRAIT',
+  LANDSCAPE = 'LANDSCAPE',
+}
+
+/**
+ * Presentation style for the SDK modal.
+ * - `FULL_SCREEN`: Full-screen modal (default).
+ * - `SHEET`: Bottom sheet presentation.
+ *
+ * @platform ios
+ */
+export enum MyIdPresentationStyle {
+  FULL_SCREEN = 'FULL_SCREEN',
+  SHEET = 'SHEET',
 }
 
 // ---------------------------------------------------------------------------
@@ -49,21 +121,55 @@ export enum MyIdCameraShape {
  * Organization branding details shown in the SDK.
  */
 export interface MyIdOrganizationDetails {
-  /** Support phone number displayed on error screens. */
+  /** Support phone number displayed on error screens (default: MyID call center). */
   phoneNumber?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Config — discriminated union (session flow vs hash flow)
+// Config
 // ---------------------------------------------------------------------------
 
 /**
- * Shared configuration fields for both SDK flows.
+ * Configuration for starting the MyID SDK.
  *
- * @see {@link MyIdSessionConfig} — new session-based flow.
- * @see {@link MyIdHashConfig}    — legacy client-hash flow.
+ * All three auth fields (`sessionId`, `clientHash`, `clientHashId`) can be
+ * provided simultaneously — this is the recommended approach per the official
+ * SDK examples.
+ *
+ * At minimum, provide `sessionId` or both `clientHash` + `clientHashId`.
+ * For `IDENTIFICATION` entry type, all three may be required by the server.
+ *
+ * @example
+ * ```ts
+ * const config: MyIdConfig = {
+ *   sessionId: 'uuid-from-backend',
+ *   clientHash: 'hash-from-myid-team',
+ *   clientHashId: 'hash-id-from-myid-team',
+ *   buildMode: MyIdBuildMode.PRODUCTION,
+ *   locale: MyIdLocale.EN,
+ *   residency: MyIdResidency.RESIDENT,
+ * };
+ * ```
  */
-interface MyIdBaseConfig {
+export interface MyIdConfig {
+  // ── Auth fields ────────────────────────────────────────────────────────
+
+  /**
+   * Session ID from your backend.
+   * Created via `POST /api/v2/sdk/sessions`.
+   *
+   * Mandatory for `IDENTIFICATION` entry type.
+   */
+  sessionId?: string;
+
+  /** Client hash provided by the MyID sales team. Mandatory for `IDENTIFICATION`. */
+  clientHash?: string;
+
+  /** Client hash ID provided by the MyID sales team. Mandatory for `IDENTIFICATION`. */
+  clientHashId?: string;
+
+  // ── Core options ───────────────────────────────────────────────────────
+
   /**
    * Entry type: identification, video identification, or face detection.
    * @default MyIdEntryType.IDENTIFICATION
@@ -83,75 +189,94 @@ interface MyIdBaseConfig {
   locale?: MyIdLocale;
 
   /**
+   * Residency type. Determines which verification flow the SDK uses.
+   * @default MyIdResidency.RESIDENT
+   */
+  residency?: MyIdResidency;
+
+  /**
+   * Minimum age required to use the service.
+   * @default 16
+   */
+  minAge?: number;
+
+  // ── Camera options ─────────────────────────────────────────────────────
+
+  /**
    * Camera overlay shape.
    * @default MyIdCameraShape.CIRCLE
    */
   cameraShape?: MyIdCameraShape;
 
+  /**
+   * Camera selector (front or back).
+   * @default MyIdCameraSelector.FRONT
+   * @platform android
+   */
+  cameraSelector?: MyIdCameraSelector;
+
+  /**
+   * Camera resolution.
+   * @default MyIdCameraResolution.LOW
+   * @platform android
+   */
+  cameraResolution?: MyIdCameraResolution;
+
+  // ── Image options ──────────────────────────────────────────────────────
+
+  /**
+   * Image format for captured photos.
+   * @default MyIdImageFormat.JPEG
+   * @platform android
+   */
+  imageFormat?: MyIdImageFormat;
+
+  // ── UI options ─────────────────────────────────────────────────────────
+
+  /**
+   * Whether to show the SDK's built-in error screen before calling `onError`.
+   * @default true
+   */
+  showErrorScreen?: boolean;
+
+  /**
+   * Screen orientation during the SDK flow.
+   * @default MyIdScreenOrientation.PORTRAIT
+   * @platform android
+   */
+  screenOrientation?: MyIdScreenOrientation;
+
+  /**
+   * Presentation style for the SDK modal.
+   * @default MyIdPresentationStyle.FULL_SCREEN
+   * @platform ios
+   */
+  presentationStyle?: MyIdPresentationStyle;
+
+  /**
+   * Enable or disable sound guides during the flow.
+   * @default true
+   * @platform android
+   */
+  withSoundGuides?: boolean;
+
+  /**
+   * Distance threshold for face capture.
+   * @default 0.65
+   * @platform android
+   */
+  distance?: number;
+
   /** Organization branding details. */
   organizationDetails?: MyIdOrganizationDetails;
-}
 
-/**
- * Configuration for the **new session-based flow**.
- *
- * The `sessionId` is obtained from your backend by calling
- * `POST /api/v2/sdk/sessions`.
- *
- * `clientHash` / `clientHashId` must **not** be provided.
- */
-export interface MyIdSessionConfig extends MyIdBaseConfig {
   /**
-   * Session ID from your backend (new flow).
-   * Created via `POST /api/v2/sdk/sessions`.
+   * Huawei App ID for HMS devices.
+   * Required only when targeting Huawei devices without Google Play Services.
+   * @platform android
    */
-  sessionId: string;
-
-  /** @deprecated Not allowed in session flow — use `sessionId` instead. */
-  clientHash?: never;
-  /** @deprecated Not allowed in session flow — use `sessionId` instead. */
-  clientHashId?: never;
+  huaweiAppId?: string;
 }
-
-/**
- * Configuration for the **legacy client-hash flow**.
- *
- * `sessionId` must **not** be provided.
- */
-export interface MyIdHashConfig extends MyIdBaseConfig {
-  /** @deprecated Not allowed in hash flow — use `clientHash` instead. */
-  sessionId?: never;
-
-  /** Client hash from your backend (old flow). */
-  clientHash: string;
-
-  /** Client hash ID / slug (old flow). */
-  clientHashId: string;
-}
-
-/**
- * Configuration for starting the MyID SDK.
- *
- * This is a **discriminated union** — you must choose exactly one flow:
- *
- * - **Session flow** (recommended): provide `sessionId`.
- * - **Hash flow** (legacy): provide `clientHash` + `clientHashId`.
- *
- * @example
- * ```ts
- * // ✅ Session flow
- * const config: MyIdConfig = {
- *   sessionId: 'uuid-from-backend',
- * };
- *
- * // ✅ Hash flow
- * const config: MyIdConfig = {
- *   clientHash: 'hash',
- *   clientHashId: 'slug',
- * };
- * ```
- */
-export type MyIdConfig = MyIdSessionConfig | MyIdHashConfig;
 
 // ---------------------------------------------------------------------------
 // Result
@@ -170,8 +295,8 @@ export interface MyIdResult {
   code: string;
 
   /**
-   * Captured face image as a base64-encoded string.
-   * Only returned if the SDK captured a photo.
+   * Captured face image as a base64-encoded JPEG string.
+   * Returned when the SDK captures a photo.
    */
   image?: string;
 }
@@ -183,9 +308,11 @@ export interface MyIdResult {
 /**
  * Error codes returned by the MyID SDK.
  *
+ * Full list: https://docs.myid.uz/#/ru/embedded?id=javob-kodlar-uz-result_code
+ *
  * @example
  * ```ts
- * import { MyIdError, MyIdErrorCodes } from 'react-native-myid';
+ * import { MyIdError, MyIdErrorCodes } from '@maydon_tech/react-native-myid';
  *
  * try {
  *   await startMyId(config);
