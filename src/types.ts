@@ -295,6 +295,16 @@ export class MyIdError extends Error {
     // Fix prototype chain for `instanceof` checks in transpiled code
     Object.setPrototypeOf(this, MyIdError.prototype);
   }
+
+  /** Ensures `message` is included when serialized via JSON.stringify. */
+  toJSON() {
+    return {
+      name: this.name,
+      code: this.code,
+      message: this.message,
+      isUserExit: this.isUserExit,
+    };
+  }
 }
 
 /** Sentinel error code string used by the native bridge for user exit. */
