@@ -137,7 +137,7 @@ class MyIdModule: NSObject, RCTBridgeModule {
             if let presentationStyle = config["presentationStyle"] as? String {
                 switch presentationStyle {
                 case "FULL_SCREEN":
-                    myIdConfig.presentationStyle = .fullScreen
+                    myIdConfig.presentationStyle = .full
                 case "SHEET":
                     myIdConfig.presentationStyle = .sheet
                 default:
