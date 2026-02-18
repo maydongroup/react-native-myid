@@ -1,6 +1,6 @@
 {
   "name": "@maydon_tech/react-native-myid",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "React Native bridge for MyID biometric identification SDK (iOS & Android)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
