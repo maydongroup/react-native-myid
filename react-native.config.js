@@ -5,9 +5,7 @@ module.exports = {
         sourceDir: './android',
         packageImportPath: 'import com.reactnativemyid.MyIdPackage;',
       },
-      ios: {
-        podspecPath: './react-native-myid.podspec',
-      },
+      ios: {},
     },
   },
 };
