@@ -49,7 +49,7 @@ class MyIdModule(
     fun start(config: ReadableMap, promise: Promise) {
         this.promise = promise
 
-        val activity = currentActivity
+        val activity = reactApplicationContext.currentActivity
         if (activity == null) {
             promise.reject(ERROR_NO_ACTIVITY, "No current activity found")
             return
@@ -165,7 +165,7 @@ class MyIdModule(
             val myIdConfig = builder.build()
 
             // Use startActivityForResult pattern (works with React Native modules)
-            client.startActivityForResult(activity, REQUEST_CODE, myIdConfig)
+            client.startActivityForResult(activity, REQUEST_CODE, myIdConfig, this)
 
         } catch (e: Exception) {
             promise.reject(ERROR_SDK, e.message ?: "Unknown error starting MyID SDK")
@@ -180,7 +180,7 @@ class MyIdModule(
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         // Not used
     }
 

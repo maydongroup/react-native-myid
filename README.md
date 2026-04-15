@@ -20,11 +20,13 @@ npm install @maydon_tech/react-native-myid
 
 ### Android
 
-Add the MyID Artifactory repository to your project's `android/build.gradle`:
+Add the MyID Artifactory repository to your project's `android/build.gradle` so Gradle can resolve the MyID SDK dependencies:
 
 ```gradle
-repositories {
-    maven { url "https://artifactory.aigroup.uz:443/artifactory/myid/" }
+allprojects {
+    repositories {
+        maven { url "https://artifactory.aigroup.uz:443/artifactory/myid/" }
+    }
 }
 ```
 
